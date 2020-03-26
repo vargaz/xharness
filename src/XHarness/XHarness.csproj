@@ -16,4 +16,8 @@
     <PackageReference Include="Mono.Options" Version="6.6.0.161" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="iOS\" />
+    <Folder Include="Android\" />
+  </ItemGroup>
 </Project>
