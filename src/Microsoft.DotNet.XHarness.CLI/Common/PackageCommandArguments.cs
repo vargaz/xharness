@@ -8,29 +8,11 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.DotNet.XHarness.CLI.Common
 {
-    internal interface IPackageCommandArguments : ICommandArguments
-    {
-        /// <summary>
-        /// Name of the packaged app
-        /// </summary>
-        string AppPackageName { get; set; }
-
-        /// <summary>
-        /// Path where the outputs of execution will be stored
-        /// </summary>
-        string OutputDirectory { get; set; }
-
-        /// <summary>
-        /// Path where run logs will hbe stored and projects
-        /// </summary>
-        string WorkingDirectory { get; set; }
-    }
-
     internal abstract class PackageCommandArguments : IPackageCommandArguments
     {
-        public string AppPackageName { get; set; }
-        public string OutputDirectory { get; set; }
-        public string WorkingDirectory { get; set; }
+        public string? AppPackageName { get; set; }
+        public string? OutputDirectory { get; set; }
+        public string? WorkingDirectory { get; set; }
         public LogLevel Verbosity { get; set; }
 
         public virtual IList<string> GetValidationErrors()

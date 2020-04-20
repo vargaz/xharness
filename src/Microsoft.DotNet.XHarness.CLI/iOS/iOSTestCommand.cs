@@ -27,9 +27,9 @@ namespace Microsoft.DotNet.XHarness.CLI.iOS
         private readonly iOSTestCommandArguments _arguments = new iOSTestCommandArguments();
         protected override ITestCommandArguments TestArguments => _arguments;
 
-        public iOSTestCommand() : base()
+        protected override OptionSet GetOptions()
         {
-            Options = new OptionSet()
+            var options = new OptionSet
             {
                 "usage: ios test [OPTIONS]",
                 "",
@@ -40,13 +40,15 @@ namespace Microsoft.DotNet.XHarness.CLI.iOS
                 { "launch-timeout=|lt=", "Time span, in seconds, to wait for the iOS app to start.", v => _arguments.LaunchTimeout = TimeSpan.FromSeconds(int.Parse(v))},
             };
 
-            foreach (var option in CommonOptions)
+            foreach (var option in base.GetOptions())
             {
-                Options.Add(option);
+                options.Add(option);
             }
+
+            return options;
         }
 
-        protected override async Task<ExitCode> InvokeInternal()
+        protected override async Task<ExitCode> InvokeInternal(ILogger logger)
         {
             var processManager = new ProcessManager(_arguments.XcodeRoot, _arguments.MlaunchPath);
             var deviceLoader = new HardwareDeviceLoader(processManager);
@@ -59,7 +61,7 @@ namespace Microsoft.DotNet.XHarness.CLI.iOS
 
             foreach (TestTarget target in _arguments.TestTargets)
             {
-                var exitCodeForRun = await RunTest(target, logs, processManager, deviceLoader, simulatorLoader, cancellationToken);
+                var exitCodeForRun = await RunTest(logger, target, logs, processManager, deviceLoader, simulatorLoader, cancellationToken);
 
                 if (exitCodeForRun != ExitCode.SUCCESS)
                 {
@@ -70,20 +72,22 @@ namespace Microsoft.DotNet.XHarness.CLI.iOS
             return exitCode;
         }
 
-        private async Task<ExitCode> RunTest(TestTarget target,
+        private async Task<ExitCode> RunTest(
+            ILogger logger,
+            TestTarget target,
             Logs logs,
             ProcessManager processManager,
             IHardwareDeviceLoader deviceLoader,
             ISimulatorLoader simulatorLoader,
             CancellationToken cancellationToken = default)
         {
-            _log.LogInformation($"Starting test for {target.AsString()}{ (_arguments.DeviceName != null ? " targeting " + _arguments.DeviceName : null) }..");
+            logger.LogInformation($"Starting test for {target.AsString()}{ (_arguments.DeviceName != null ? " targeting " + _arguments.DeviceName : null) }..");
 
             string mainLogFile = Path.Join(_arguments.OutputDirectory, $"run-{target}{(_arguments.DeviceName != null ? "-" + _arguments.DeviceName : null)}.log");
             ILog mainLog = logs.Create(mainLogFile, LogType.ExecutionLog.ToString(), true);
             int verbosity = _arguments.Verbosity.ToInt();
 
-            string deviceName = _arguments.DeviceName;
+            string? deviceName = _arguments.DeviceName;
 
             var appBundleInformationParser = new AppBundleInformationParser(processManager);
 
@@ -95,13 +99,13 @@ namespace Microsoft.DotNet.XHarness.CLI.iOS
             }
             catch (Exception e)
             {
-                _log.LogError($"Failed to get bundle information: {e.Message}");
+                logger.LogError($"Failed to get bundle information: {e.Message}");
                 return ExitCode.FAILED_TO_GET_BUNDLE_INFO;
             }
 
             if (!target.IsSimulator())
             {
-                _log.LogInformation($"Installing application '{appBundleInfo.AppName}' on " + (deviceName != null ? " on device '{deviceName}'" : target.AsString()));
+                logger.LogInformation($"Installing application '{appBundleInfo.AppName}' on " + (deviceName != null ? " on device '{deviceName}'" : target.AsString()));
 
                 var appInstaller = new AppInstaller(processManager, deviceLoader, mainLog, verbosity);
 
@@ -113,25 +117,25 @@ namespace Microsoft.DotNet.XHarness.CLI.iOS
                 }
                 catch (NoDeviceFoundException)
                 {
-                    _log.LogError($"Failed to find suitable device for target {target.AsString()}");
+                    logger.LogError($"Failed to find suitable device for target {target.AsString()}");
                     return ExitCode.DEVICE_NOT_FOUND;
                 }
                 catch (Exception e)
                 {
-                    _log.LogError($"Failed to install the app bundle:{Environment.NewLine}{e}");
+                    logger.LogError($"Failed to install the app bundle:{Environment.NewLine}{e}");
                     return ExitCode.PACKAGE_INSTALLATION_FAILURE;
                 }
 
                 if (!result.Succeeded)
                 {
-                    _log.LogError($"Failed to install the app bundle (exit code={result.ExitCode})");
+                    logger.LogError($"Failed to install the app bundle (exit code={result.ExitCode})");
                     return ExitCode.PACKAGE_INSTALLATION_FAILURE;
                 }
 
-                _log.LogInformation($"Application '{appBundleInfo.AppName}' was installed successfully on device '{deviceName}'");
+                logger.LogInformation($"Application '{appBundleInfo.AppName}' was installed successfully on device '{deviceName}'");
             }
 
-            _log.LogInformation($"Starting application '{appBundleInfo.AppName}' on " + (deviceName != null ? " on device '{deviceName}'" : target.AsString()));
+            logger.LogInformation($"Starting application '{appBundleInfo.AppName}' on " + (deviceName != null ? " on device '{deviceName}'" : target.AsString()));
 
             int exitCode;
 
@@ -160,40 +164,40 @@ namespace Microsoft.DotNet.XHarness.CLI.iOS
 
                 if (exitCode != 0)
                 {
-                    _log.LogError($"App bundle run failed with exit code {exitCode}. Check logs for more information");
+                    logger.LogError($"App bundle run failed with exit code {exitCode}. Check logs for more information");
                 }
                 else
                 {
-                    _log.LogInformation("Application finished the run successfully");
+                    logger.LogInformation("Application finished the run successfully");
                 }
 
                 return 0;
             }
             catch (NoDeviceFoundException)
             {
-                _log.LogError($"Failed to find suitable device for target {target.AsString()}");
+                logger.LogError($"Failed to find suitable device for target {target.AsString()}");
                 return ExitCode.DEVICE_NOT_FOUND;
             }
             catch (Exception e)
             {
-                _log.LogError($"Application run failed:{Environment.NewLine}{e}");
+                logger.LogError($"Application run failed:{Environment.NewLine}{e}");
                 return ExitCode.APP_CRASH;
             }
             finally
             {
                 if (!target.IsSimulator())
                 {
-                    _log.LogInformation($"Uninstalling the application '{appBundleInfo.AppName}' from device '{deviceName}'");
+                    logger.LogInformation($"Uninstalling the application '{appBundleInfo.AppName}' from device '{deviceName}'");
 
                     var appUninstaller = new AppUninstaller(processManager, mainLog, verbosity);
                     var uninstallResult = await appUninstaller.UninstallApp(deviceName, appBundleInfo.BundleIdentifier, cancellationToken);
                     if (!uninstallResult.Succeeded)
                     {
-                        _log.LogError($"Failed to uninstall the app bundle with exit code: {uninstallResult.ExitCode}");
+                        logger.LogError($"Failed to uninstall the app bundle with exit code: {uninstallResult.ExitCode}");
                     }
                     else
                     {
-                        _log.LogInformation($"Application '{appBundleInfo.AppName}' was uninstalled successfully");
+                        logger.LogInformation($"Application '{appBundleInfo.AppName}' was uninstalled successfully");
                     }
                 }
             }

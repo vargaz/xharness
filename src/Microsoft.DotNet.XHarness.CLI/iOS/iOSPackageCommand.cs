@@ -27,9 +27,10 @@ namespace Microsoft.DotNet.XHarness.CLI.iOS
 
         protected override IPackageCommandArguments PackageArguments => _arguments;
 
-        public iOSPackageCommand() : base()
+        protected override OptionSet GetOptions()
         {
-            Options = new OptionSet() {
+            var options = new OptionSet
+            {
                 "usage: ios package [OPTIONS]",
                 "",
                 "Packaging command that will create a iOS/tvOS/watchOS or macOS application that can be used to run NUnit or XUnit-based test dlls",
@@ -39,28 +40,30 @@ namespace Microsoft.DotNet.XHarness.CLI.iOS
                     v=> {
                         if (Enum.TryParse<TemplateType>(v, out TemplateType template)) {
                             _arguments.SelectedTemplateType = template;
-                        } else
+                        }
+                        else
                         {
-                            _log.LogInformation($"Unknown template type '{v}'");
-                            ShowHelp = true;
+                            throw new ArgumentException($"Unknown template type '{v}'");
                         }
                     }
                 },
                 { "traits-directory=|td=", "Root directory that contains all the .txt files with traits that will be skipped if needed.", v =>  _arguments.TraitsRootDirectory = v },
             };
 
-            foreach (var option in CommonOptions)
+            foreach (var option in base.GetOptions())
             {
-                Options.Add(option);
+                options.Add(option);
             }
+
+            return options;
         }
 
-        protected override Task<ExitCode> InvokeInternal()
+        protected override Task<ExitCode> InvokeInternal(ILogger logger)
         {
-            _log.LogDebug($"iOS Package command called:{Environment.NewLine}Application Name = {_arguments.AppPackageName}");
-            _log.LogDebug($"Working Directory:{_arguments.WorkingDirectory}{Environment.NewLine}Output Directory:{_arguments.OutputDirectory}");
-            _log.LogDebug($"Ignore Files Root Directory:{_arguments.IgnoreFilesRootDirectory}{Environment.NewLine}Traits Root Directory:{_arguments.TraitsRootDirectory}");
-            _log.LogDebug($"MTouch Args:{_arguments.MtouchExtraArgs}{Environment.NewLine}Template Type:{Enum.GetName(typeof(TemplateType), _arguments.SelectedTemplateType)}");
+            logger.LogDebug($"iOS Package command called:{Environment.NewLine}Application Name = {_arguments.AppPackageName}");
+            logger.LogDebug($"Working Directory:{_arguments.WorkingDirectory}{Environment.NewLine}Output Directory:{_arguments.OutputDirectory}");
+            logger.LogDebug($"Ignore Files Root Directory:{_arguments.IgnoreFilesRootDirectory}{Environment.NewLine}Traits Root Directory:{_arguments.TraitsRootDirectory}");
+            logger.LogDebug($"MTouch Args:{_arguments.MtouchExtraArgs}{Environment.NewLine}Template Type:{Enum.GetName(typeof(TemplateType), _arguments.SelectedTemplateType)}");
 
             return Task.FromResult(ExitCode.SUCCESS);
         }

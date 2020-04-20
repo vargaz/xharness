@@ -5,20 +5,18 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Microsoft.Extensions.Logging;
 
 namespace Microsoft.DotNet.XHarness.CLI.Common
 {
-    internal abstract class TestCommandArguments : ITestCommandArguments
+    internal abstract class TestCommandArguments : XHarnessCommandArguments, ITestCommandArguments
     {
-        public string AppPackagePath { get; set; }
-        public IReadOnlyCollection<string> Targets { get; set; }
+        public string? AppPackagePath { get; set; }
+        public IReadOnlyCollection<string>? Targets { get; set; }
         public TimeSpan Timeout { get; set; } = TimeSpan.FromMinutes(15);
-        public string OutputDirectory { get; set; }
-        public string WorkingDirectory { get; set; }
-        public LogLevel Verbosity { get; set; }
+        public string? OutputDirectory { get; set; }
+        public string? WorkingDirectory { get; set; }
 
-        public virtual IList<string> GetValidationErrors()
+        public override IList<string> GetValidationErrors()
         {
             var errors = new List<string>();
 

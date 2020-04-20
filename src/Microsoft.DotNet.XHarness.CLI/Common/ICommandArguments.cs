@@ -23,12 +23,12 @@ namespace Microsoft.DotNet.XHarness.CLI.Common
         /// <summary>
         /// Path to packaged app
         /// </summary>
-        string AppPackagePath { get; set; }
+        string? AppPackagePath { get; set; }
 
         /// <summary>
         /// List of targets to test
         /// </summary>
-        IReadOnlyCollection<string> Targets { get; set; }
+        IReadOnlyCollection<string>? Targets { get; set; }
 
         /// <summary>
         /// How long XHarness should wait until a test execution completes before clean up (kill running apps, uninstall, etc)
@@ -38,11 +38,29 @@ namespace Microsoft.DotNet.XHarness.CLI.Common
         /// <summary>
         /// Path where the outputs of execution will be stored
         /// </summary>
-        string OutputDirectory { get; set; }
+        string? OutputDirectory { get; set; }
 
         /// <summary>
         /// Path where run logs will hbe stored and projects
         /// </summary>
-        string WorkingDirectory { get; set; }
+        string? WorkingDirectory { get; set; }
+    }
+
+    internal interface IPackageCommandArguments : ICommandArguments
+    {
+        /// <summary>
+        /// Name of the packaged app
+        /// </summary>
+        string? AppPackageName { get; set; }
+
+        /// <summary>
+        /// Path where the outputs of execution will be stored
+        /// </summary>
+        string? OutputDirectory { get; set; }
+
+        /// <summary>
+        /// Path where run logs will hbe stored and projects
+        /// </summary>
+        string? WorkingDirectory { get; set; }
     }
 }

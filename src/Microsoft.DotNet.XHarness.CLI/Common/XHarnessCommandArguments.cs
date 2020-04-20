@@ -7,19 +7,10 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.DotNet.XHarness.CLI.Common
 {
-    internal class GetStateCommandArguments : ICommandArguments
+    internal abstract class XHarnessCommandArguments : ICommandArguments
     {
         public LogLevel Verbosity { get; set; }
 
-        public IList<string> GetValidationErrors() => new List<string>();
-    }
-
-    internal abstract class GetStateCommand : XHarnessCommand
-    {
-        protected override ICommandArguments Arguments => new GetStateCommandArguments();
-
-        public GetStateCommand() : base("state")
-        {
-        }
+        public abstract IList<string> GetValidationErrors();
     }
 }

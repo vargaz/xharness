@@ -18,82 +18,86 @@ namespace Microsoft.DotNet.XHarness.CLI.Common
 
         protected bool ShowHelp = false;
 
-        protected ILogger _log;
-        protected ILoggerFactory _logFactory;
-        protected string _name;
-
         protected XHarnessCommand(string name) : base(name)
         {
-            _name = name;
         }
+
+        protected virtual OptionSet GetOptions() => new OptionSet
+        {
+            {
+                "verbosity:|v:",
+                "Verbosity level (1-6) where higher means less logging. (default = 2 / Information)",
+                v =>
+                {
+                    if (Enum.TryParse(v, out LogLevel vl))
+                    {
+                        Arguments.Verbosity = vl;
+                    }
+                    else
+                    {
+                        throw new ArgumentException($"Unknown template type '{v}'");
+                    }
+                }
+            },
+            { "help|h", "Show this message", v => ShowHelp = v != null }
+        };
 
         public override sealed int Invoke(IEnumerable<string> arguments)
         {
+            var options = GetOptions();
+            List<string> extra;
+
             try
             {
-                var extra = Options.Parse(arguments);
-
-                if (Arguments != null)
-                {
-                    InitializeLog(Arguments.Verbosity, _name);
-                }
-                else
-                {
-                    InitializeLog(LogLevel.Information, _name);
-                }
-
-                if (ShowHelp)
-                {
-                    Options.WriteOptionDescriptions(Console.Out);
-                    return 0;
-                }
-
-                if (extra.Count > 0)
-                {
-                    _log.LogError($"Unknown arguments{string.Join(" ", extra)}");
-                    Options.WriteOptionDescriptions(Console.Out);
-                    return 1;
-                }
-
-                var validationErrors = Arguments?.GetValidationErrors();
-
-                if (validationErrors?.Any() ?? false)
-                {
-                    var message = new StringBuilder("Invalid arguments:");
-                    foreach (string error in validationErrors)
-                    {
-                        message.Append(Environment.NewLine + "  - " + error);
-                    }
-
-                    _log.LogError(message.ToString());
-
-                    return 1;
-                }
-
-                return (int) InvokeInternal().GetAwaiter().GetResult();
+                extra = Options.Parse(arguments);
             }
-            finally
+            catch (Exception e)
             {
-                // Needed for quick execution to flush out all output.
-                _logFactory.Dispose();
+                Console.Error.WriteLine($"Failed to parse arguments: {e.Message}");
+                return 1;
             }
+
+            using var loggerFactory = CreateLoggerFactory(Arguments?.Verbosity ?? LogLevel.Information);
+            var logger = loggerFactory.CreateLogger(Name);
+
+            if (ShowHelp)
+            {
+                options.WriteOptionDescriptions(Console.Out);
+                return 0;
+            }
+
+            if (extra.Count > 0)
+            {
+                logger.LogError($"Unknown arguments{string.Join(" ", extra)}");
+                options.WriteOptionDescriptions(Console.Out);
+                return 1;
+            }
+
+            var validationErrors = Arguments?.GetValidationErrors();
+
+            if (validationErrors?.Any() ?? false)
+            {
+                var message = new StringBuilder("Invalid arguments:");
+                foreach (string error in validationErrors)
+                {
+                    message.Append(Environment.NewLine + "  - " + error);
+                }
+
+                logger.LogError(message.ToString());
+
+                return 1;
+            }
+
+            return (int) InvokeInternal(logger).GetAwaiter().GetResult();
         }
 
-        private void InitializeLog(LogLevel verbosity, string name)
+        protected abstract Task<ExitCode> InvokeInternal(ILogger logger);
+
+        private static ILoggerFactory CreateLoggerFactory(LogLevel verbosity) => LoggerFactory.Create(builder =>
         {
-            _logFactory = LoggerFactory.Create(builder =>
-            {
-                builder
-                    .AddConsole()
-                    .AddFilter(
-                    (level) =>
-                    {
-                        return level >= verbosity;
-                    });
-            });
-            _log = _logFactory.CreateLogger(name);
-        }
-
-        protected abstract Task<ExitCode> InvokeInternal();
+            builder
+                .AddConsole()
+                .AddFilter(level => level >= verbosity);
+        });
     }
 }

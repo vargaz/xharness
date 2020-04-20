@@ -17,25 +17,22 @@ namespace Microsoft.DotNet.XHarness.CLI.Android
         private readonly AndroidTestCommandArguments _arguments = new AndroidTestCommandArguments();
         protected override ITestCommandArguments TestArguments => _arguments;
 
-        public AndroidTestCommand() : base()
+        protected override OptionSet GetOptions()
         {
-            Options = new OptionSet() {
+            var options = new OptionSet
+            {
                 "usage: android test [OPTIONS]",
                 "",
                 "Executes tests on and Android device, waits up to a given timeout, then copies files off the device.",
                 { "arg=", "Argument to pass to the instrumentation, in form key=value", v =>
                     {
                         string[] argPair = v.Split('=');
-
                         if (argPair.Length != 2)
                         {
-                            Options.WriteOptionDescriptions(Console.Out);
-                            return;
+                            throw new ArgumentException("");
                         }
-                        else
-                        {
-                            _arguments.InstrumentationArguments.Add(argPair[0].Trim(), argPair[1].Trim());
-                        }
+
+                        _arguments.InstrumentationArguments.Add(argPair[0].Trim(), argPair[1].Trim());
                     }
                 },
                 { "device-out-folder=|dev-out=", "If specified, copy this folder recursively off the device to the path specified by the output directory",  v => _arguments.DeviceOutputFolder = v},
@@ -43,44 +40,46 @@ namespace Microsoft.DotNet.XHarness.CLI.Android
                 { "package-name=|p=", "Package name contained within the supplied APK",  v => _arguments.PackageName = v},
             };
 
-            foreach (var option in CommonOptions)
+            foreach (var option in base.GetOptions())
             {
-                Options.Add(option);
+                options.Add(option);
             }
+
+            return options;
         }
 
-        protected override Task<ExitCode> InvokeInternal()
+        protected override Task<ExitCode> InvokeInternal(ILogger logger)
         {
-            _log.LogDebug($"Android Test command called: App = {_arguments.AppPackagePath}{Environment.NewLine}Instrumentation Name = {_arguments.InstrumentationName}");
-            _log.LogDebug($"Output Directory:{_arguments.OutputDirectory}{Environment.NewLine}Working Directory = {_arguments.WorkingDirectory}{Environment.NewLine}Timeout = {_arguments.Timeout.TotalSeconds} seconds.");
-            _log.LogDebug("Arguments to instrumentation:");
+            logger.LogDebug($"Android Test command called: App = {_arguments.AppPackagePath}{Environment.NewLine}Instrumentation Name = {_arguments.InstrumentationName}");
+            logger.LogDebug($"Output Directory:{_arguments.OutputDirectory}{Environment.NewLine}Working Directory = {_arguments.WorkingDirectory}{Environment.NewLine}Timeout = {_arguments.Timeout.TotalSeconds} seconds.");
+            logger.LogDebug("Arguments to instrumentation:");
 
             if (!File.Exists(_arguments.AppPackagePath))
             {
-                _log.LogCritical($"Couldn't find {_arguments.AppPackagePath}!");
+                logger.LogCritical($"Couldn't find {_arguments.AppPackagePath}!");
                 return Task.FromResult(ExitCode.PACKAGE_NOT_FOUND);
             }
-            var runner = new AdbRunner(_log);
+            var runner = new AdbRunner(logger);
 
             // Package Name is not guaranteed to match file name, so it needs to be mandatory.
             string apkPackageName = _arguments.PackageName;
 
             try
             {
-                using (_log.BeginScope("Initialization and setup of APK on device"))
+                using (logger.BeginScope("Initialization and setup of APK on device"))
                 {
                     runner.KillAdbServer();
                     runner.StartAdbServer();
                     runner.ClearAdbLog();
 
-                    _log.LogDebug($"Working with {runner.GetAdbVersion()}");
+                    logger.LogDebug($"Working with {runner.GetAdbVersion()}");
 
                     // If anything changed about the app, Install will fail; uninstall it first.
                     // (we'll ignore if it's not present)
                     runner.UninstallApk(apkPackageName);
                     if (runner.InstallApk(_arguments.AppPackagePath) != 0)
                     {
-                        _log.LogCritical("Install failure: Test command cannot continue");
+                        logger.LogCritical("Install failure: Test command cannot continue");
                         return Task.FromResult(ExitCode.PACKAGE_INSTALLATION_FAILURE);
                     }
                     runner.KillApk(apkPackageName);
@@ -89,14 +88,14 @@ namespace Microsoft.DotNet.XHarness.CLI.Android
                 // No class name = default Instrumentation
                 runner.RunApkInstrumentation(apkPackageName, _arguments.InstrumentationName, _arguments.InstrumentationArguments, _arguments.Timeout);
 
-                using (_log.BeginScope("Post-test copy and cleanup"))
+                using (logger.BeginScope("Post-test copy and cleanup"))
                 {
                     if (!string.IsNullOrEmpty(_arguments.DeviceOutputFolder))
                     {
                         var logs = runner.PullFiles(_arguments.DeviceOutputFolder, _arguments.OutputDirectory);
                         foreach (string log in logs)
                         {
-                            _log.LogDebug($"Detected output file: {log}");
+                            logger.LogDebug($"Detected output file: {log}");
                         }
                     }
                     runner.DumpAdbLog(Path.Combine(_arguments.OutputDirectory, $"adb-logcat-{_arguments.PackageName}.log"));
@@ -107,7 +106,7 @@ namespace Microsoft.DotNet.XHarness.CLI.Android
             }
             catch (Exception toLog)
             {
-                _log.LogCritical(toLog, $"Failure to run test package: {toLog.Message}");
+                logger.LogCritical(toLog, $"Failure to run test package: {toLog.Message}");
             }
             finally
             {
