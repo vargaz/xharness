@@ -63,19 +63,15 @@ stages:
           displayName: Build
           condition: succeeded()
 
-        # - task: PublishBuildArtifacts@1
-        #   displayName: Publish Logs to VSTS
-        #   inputs:
-        #     PathtoPublish: '$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)'
-        #     PublishLocation: Container
-        #     ArtifactName: $(Agent.Os)_$(Agent.JobName)
-        #   continueOnError: true
-        #   condition: always()
+        - publish: $(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)/Shipping/Microsoft.DotNet.XHarness.CLI.1.0.0-ci.nupkg
+          artifact: 'Microsoft.DotNet.XHarness.CLI'
+
 - stage: test
   displayName: Run integration tests
   dependsOn: build
   jobs:
-  - job: Integration_tests
+  - job: integration_tests
+    displayName: Integration tests
     pool:
         name: Hosted macOS
     steps:
