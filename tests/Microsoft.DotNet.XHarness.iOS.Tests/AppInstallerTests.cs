@@ -60,7 +60,7 @@ namespace Xharness.Tests
             var appInstaller = new AppInstaller(_processManager.Object, _hardwareDeviceLoader.Object, _mainLog.Object, 1);
 
             var exception = Assert.ThrowsAsync<InvalidOperationException>(
-                async () => await appInstaller.InstallApp(s_appPath, TestTarget.Simulator_iOS64),
+                async () => await appInstaller.InstallApp(s_appPath, TestTarget.Simulator_iOS64, deviceName: null),
                 "Install should not be allowed on a simulator");
         }
 
@@ -75,7 +75,7 @@ namespace Xharness.Tests
             var appInstaller = new AppInstaller(_processManager.Object, _hardwareDeviceLoader.Object, _mainLog.Object, 1);
 
             Assert.ThrowsAsync<NoDeviceFoundException>(
-                async () => await appInstaller.InstallApp(s_appPath, TestTarget.Device_iOS),
+                async () => await appInstaller.InstallApp(s_appPath, TestTarget.Device_iOS, deviceName: null),
                 "Install requires connected devices");
         }
 
@@ -85,7 +85,7 @@ namespace Xharness.Tests
             // Act
             var appInstaller = new AppInstaller(_processManager.Object, _hardwareDeviceLoader.Object, _mainLog.Object, 2);
 
-            var (deviceName, result) = await appInstaller.InstallApp(s_appPath, TestTarget.Device_iOS);
+            var (deviceName, result) = await appInstaller.InstallApp(s_appPath, TestTarget.Device_iOS, deviceName: null);
 
             // Verify
             Assert.AreEqual(0, result.ExitCode);

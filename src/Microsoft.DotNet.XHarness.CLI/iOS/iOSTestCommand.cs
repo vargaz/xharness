@@ -31,7 +31,6 @@ namespace Microsoft.DotNet.XHarness.CLI.iOS
         private readonly iOSTestCommandArguments _arguments = new iOSTestCommandArguments();
         protected override ITestCommandArguments TestArguments => _arguments;
 
-
         protected override OptionSet GetOptions()
         {
             var options = new OptionSet
@@ -94,6 +93,16 @@ namespace Microsoft.DotNet.XHarness.CLI.iOS
             ISimulatorLoader simulatorLoader,
             CancellationToken cancellationToken = default)
         {
+            if (string.IsNullOrEmpty(_arguments.AppPackagePath))
+            {
+                throw new ArgumentException("App package path was not set");
+            }
+
+            if (string.IsNullOrEmpty(_arguments.AppPackagePath))
+            {
+                throw new ArgumentException("App package path was not set");
+            }
+
             logger.LogInformation($"Starting test for {target.AsString()}{ (_arguments.DeviceName != null ? " targeting " + _arguments.DeviceName : null) }..");
 
             string mainLogFile = Path.Join(_arguments.OutputDirectory, $"run-{target}{(_arguments.DeviceName != null ? "-" + _arguments.DeviceName : null)}.log");
@@ -126,7 +135,7 @@ namespace Microsoft.DotNet.XHarness.CLI.iOS
 
                 try
                 {
-                    (deviceName, result) = await appInstaller.InstallApp(_arguments.AppPackagePath, target, cancellationToken: cancellationToken);
+                    (deviceName, result) = await appInstaller.InstallApp(_arguments.AppPackagePath, target, deviceName, cancellationToken: cancellationToken);
                 }
                 catch (NoDeviceFoundException)
                 {
@@ -152,21 +161,21 @@ namespace Microsoft.DotNet.XHarness.CLI.iOS
 
             int exitCode;
 
+            var appRunner = new AppRunner(
+                processManager,
+                deviceLoader,
+                simulatorLoader,
+                new SimpleListenerFactory(),
+                new CrashSnapshotReporterFactory(processManager),
+                new CaptureLogFactory(),
+                new DeviceLogCapturerFactory(processManager),
+                new TestReporterFactory(processManager),
+                mainLog,
+                logs,
+                new Helpers());
+
             try
             {
-                var appRunner = new AppRunner(
-                    processManager,
-                    deviceLoader,
-                    simulatorLoader,
-                    new SimpleListenerFactory(),
-                    new CrashSnapshotReporterFactory(processManager),
-                    new CaptureLogFactory(),
-                    new DeviceLogCapturerFactory(processManager),
-                    new TestReporterFactory(processManager),
-                    mainLog,
-                    logs,
-                    new Helpers());
-
                 (deviceName, exitCode) = await appRunner.RunApp(appBundleInfo,
                     target,
                     _arguments.Timeout,
@@ -198,7 +207,7 @@ namespace Microsoft.DotNet.XHarness.CLI.iOS
             }
             finally
             {
-                if (!target.IsSimulator())
+                if (!target.IsSimulator() && deviceName != null)
                 {
                     logger.LogInformation($"Uninstalling the application '{appBundleInfo.AppName}' from device '{deviceName}'");
 

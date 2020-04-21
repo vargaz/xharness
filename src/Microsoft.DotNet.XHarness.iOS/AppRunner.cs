@@ -57,10 +57,9 @@ namespace Microsoft.DotNet.XHarness.iOS
             TestTarget target,
             TimeSpan timeout,
             TimeSpan testLaunchTimeout,
-            string deviceName = null,
-            string companionDeviceName = null,
+            string? deviceName = null,
+            string? companionDeviceName = null,
             bool ensureCleanSimulatorState = false,
-            string variation = null,
             int verbosity = 1,
             XmlResultJargon xmlResultJargon = XmlResultJargon.xUnit)
         {
@@ -265,7 +264,7 @@ namespace Microsoft.DotNet.XHarness.iOS
             {
                 if (deviceName == null)
                 {
-                    IHardwareDevice companionDevice = null;
+                    IHardwareDevice? companionDevice = null;
                     IHardwareDevice device = await _hardwareDeviceLoader.FindDevice(runMode, _mainLog, includeLocked: false, force: false);
 
                     if (target.IsWatchOSTarget())
@@ -353,7 +352,7 @@ namespace Microsoft.DotNet.XHarness.iOS
             // check the final status, copy all the required data
             await testReporter.ParseResult();
 
-            return (deviceName, testReporter.Success.Value ? 0 : 1);
+            return (deviceName, testReporter.Success.HasValue ? 0 : 1);
         }
     }
 }
