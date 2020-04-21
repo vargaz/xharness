@@ -62,12 +62,13 @@ stages:
           name: Build
           displayName: Build
           condition: succeeded()
-        
-        - bash: cp $(Build.SourcesDirectory)/tests/integration-tests/run-ios-tests.sh $(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)/Shipping
-          displayName: Copy test scripts
 
         - publish: $(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)/Shipping
           artifact: Microsoft.DotNet.XHarness.CLI
+        
+        - bash: cp tests/integration-tests/run-ios-tests.sh artifacts/packages/$(_BuildConfig)/Shipping
+          displayName: Copy test scripts
+          workingDirectory: $(Build.SourcesDirectory)
 
 - stage: test
   displayName: Run integration tests
