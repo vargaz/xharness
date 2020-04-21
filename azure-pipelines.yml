@@ -47,53 +47,35 @@ stages:
       helixRepo: dotnet/xharness
 
       jobs:
-    #   - job: Windows_NT
-    #     pool:
-    #       ${{ if eq(variables._RunAsInternal, True) }}:
-    #         name: NetCoreInternal-Pool
-    #         queue: BuildPool.Server.Amd64.VS2019
-    #       ${{ if eq(variables._RunAsPublic, True) }}:
-    #         name: NetCorePublic-Pool
-    #         queue: BuildPool.Server.Amd64.VS2019.Open
-    #     strategy:
-    #       matrix:
-    #         Release:
-    #           _BuildConfig: Release
-    #         ${{ if eq(variables._RunAsPublic, True) }}:
-    #           Debug:
-    #             _BuildConfig: Debug
-    #     steps:
-    #     - script: eng\common\cibuild.cmd
-    #         -configuration $(_BuildConfig)
-    #         -prepareMachine
-    #         $(_InternalBuildArgs)
-    #       name: Build
-    #       displayName: Build
-    #       condition: succeeded()
+      - job: OSX
+        pool:
+          name: Hosted macOS
+        strategy:
+          matrix:
+            Debug:
+              _BuildConfig: Debug
+        steps:
+        - script: eng/common/cibuild.sh
+            --configuration $(_BuildConfig)
+            --prepareMachine
+            $(_InternalBuildArgs)
+          name: Build
+          displayName: Build
+          condition: succeeded()
 
-    #     - task: PublishTestResults@2
-    #       displayName: 'Publish Unit Test Results'
-    #       inputs:
-    #         testResultsFormat: xUnit
-    #         testResultsFiles: '$(Build.SourcesDirectory)/artifacts/TestResults/**/*.xml'
-    #         mergeTestResults: true
-    #         searchFolder: $(system.defaultworkingdirectory)
-    #         testRunTitle: XHarness unit tests - $(Agent.JobName)
-    #       condition: succeededOrFailed()
-
-    #     - task: PublishBuildArtifacts@1
-    #       displayName: Publish Logs to VSTS
-    #       inputs:
-    #         PathtoPublish: '$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)'
-    #         PublishLocation: Container
-    #         ArtifactName: $(Agent.Os)_$(Agent.JobName)
-    #       continueOnError: true
-    #       condition: always()
+        # - task: PublishBuildArtifacts@1
+        #   displayName: Publish Logs to VSTS
+        #   inputs:
+        #     PathtoPublish: '$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)'
+        #     PublishLocation: Container
+        #     ArtifactName: $(Agent.Os)_$(Agent.JobName)
+        #   continueOnError: true
+        #   condition: always()
 - stage: test
   displayName: Run integration tests
   dependsOn: build
   jobs:
-  - job: Integration tests
+  - job: Integration_tests
     pool:
         name: Hosted macOS
     steps:
