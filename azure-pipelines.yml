@@ -63,8 +63,8 @@ stages:
           displayName: Build
           condition: succeeded()
 
-        - publish: $(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)/Shipping/Microsoft.DotNet.XHarness.CLI.1.0.0-ci.nupkg
-          artifact: 'Microsoft.DotNet.XHarness.CLI'
+        - publish: $(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)/Shipping/Microsoft.DotNet.XHarness.CLI*.nupkg
+          artifact: Microsoft.DotNet.XHarness.CLI
 
 - stage: test
   displayName: Run integration tests
@@ -75,7 +75,20 @@ stages:
     pool:
         name: Hosted macOS
     steps:
-    - bash: "echo 'Hello world'"
-      name: HelloWorld
-      displayName: HelloWorld
-      condition: succeeded()
+    - download: current
+      artifact: Microsoft.DotNet.XHarness.CLI
+
+    - template: /eng/common/templates/steps/send-to-helix.yml
+      parameters:
+        DisplayNamePrefix: 'Run Tests'
+        HelixBaseUri: 'https://helix.int-dot.net/'
+        HelixType: test/product/
+        IncludeDotNetCli: true
+        DotNetCliPackageType: runtime
+        DotNetCliVersion: 2.1.403
+        WaitForWorkItemCompletion: true
+        HelixTargetQueues: OSX.1015.Amd64.Open # TODO: Change this
+        Creator: xharness
+        # WorkItemDirectory: ''
+        WorkItemCommand: 'hostname'
+        # WorkItemTimeout: ''
