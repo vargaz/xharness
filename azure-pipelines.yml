@@ -47,107 +47,57 @@ stages:
       helixRepo: dotnet/xharness
 
       jobs:
-      - job: Windows_NT
-        pool:
-          ${{ if eq(variables._RunAsInternal, True) }}:
-            name: NetCoreInternal-Pool
-            queue: BuildPool.Server.Amd64.VS2019
-          ${{ if eq(variables._RunAsPublic, True) }}:
-            name: NetCorePublic-Pool
-            queue: BuildPool.Server.Amd64.VS2019.Open
-        strategy:
-          matrix:
-            Release:
-              _BuildConfig: Release
-            ${{ if eq(variables._RunAsPublic, True) }}:
-              Debug:
-                _BuildConfig: Debug
-        steps:
-        - script: eng\common\cibuild.cmd
-            -configuration $(_BuildConfig)
-            -prepareMachine
-            $(_InternalBuildArgs)
-          name: Build
-          displayName: Build
-          condition: succeeded()
+    #   - job: Windows_NT
+    #     pool:
+    #       ${{ if eq(variables._RunAsInternal, True) }}:
+    #         name: NetCoreInternal-Pool
+    #         queue: BuildPool.Server.Amd64.VS2019
+    #       ${{ if eq(variables._RunAsPublic, True) }}:
+    #         name: NetCorePublic-Pool
+    #         queue: BuildPool.Server.Amd64.VS2019.Open
+    #     strategy:
+    #       matrix:
+    #         Release:
+    #           _BuildConfig: Release
+    #         ${{ if eq(variables._RunAsPublic, True) }}:
+    #           Debug:
+    #             _BuildConfig: Debug
+    #     steps:
+    #     - script: eng\common\cibuild.cmd
+    #         -configuration $(_BuildConfig)
+    #         -prepareMachine
+    #         $(_InternalBuildArgs)
+    #       name: Build
+    #       displayName: Build
+    #       condition: succeeded()
 
-        - task: PublishTestResults@2
-          displayName: 'Publish Unit Test Results'
-          inputs:
-            testResultsFormat: xUnit
-            testResultsFiles: '$(Build.SourcesDirectory)/artifacts/TestResults/**/*.xml'
-            mergeTestResults: true
-            searchFolder: $(system.defaultworkingdirectory)
-            testRunTitle: XHarness unit tests - $(Agent.JobName)
-          condition: succeededOrFailed()
+    #     - task: PublishTestResults@2
+    #       displayName: 'Publish Unit Test Results'
+    #       inputs:
+    #         testResultsFormat: xUnit
+    #         testResultsFiles: '$(Build.SourcesDirectory)/artifacts/TestResults/**/*.xml'
+    #         mergeTestResults: true
+    #         searchFolder: $(system.defaultworkingdirectory)
+    #         testRunTitle: XHarness unit tests - $(Agent.JobName)
+    #       condition: succeededOrFailed()
 
-        - task: PublishBuildArtifacts@1
-          displayName: Publish Logs to VSTS
-          inputs:
-            PathtoPublish: '$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)'
-            PublishLocation: Container
-            ArtifactName: $(Agent.Os)_$(Agent.JobName)
-          continueOnError: true
-          condition: always()
-
-      - job: OSX
-        pool:
-          name: Hosted macOS
-        strategy:
-          matrix:
-            Release:
-              _BuildConfig: Release
-            ${{ if eq(variables._RunAsPublic, True) }}:
-              Debug:
-                _BuildConfig: Debug
-        steps:
-        - script: eng/common/cibuild.sh
-            --configuration $(_BuildConfig)
-            --prepareMachine
-            $(_InternalBuildArgs)
-          name: Build
-          displayName: Build
-          condition: succeeded()
-
-        - task: PublishTestResults@2
-          displayName: 'Publish Unit Test Results'
-          inputs:
-            testResultsFormat: xUnit
-            testResultsFiles: '$(Build.SourcesDirectory)/artifacts/TestResults/**/*.xml'
-            mergeTestResults: true
-            searchFolder: $(system.defaultworkingdirectory)
-            testRunTitle: XHarness unit tests - $(Agent.JobName)
-          condition: succeededOrFailed()
-
-        - task: PublishBuildArtifacts@1
-          displayName: Publish Logs to VSTS
-          inputs:
-            PathtoPublish: '$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)'
-            PublishLocation: Container
-            ArtifactName: $(Agent.Os)_$(Agent.JobName)
-          continueOnError: true
-          condition: always()
-
-- ${{ if eq(variables._RunAsInternal, True) }}:
-  - template: eng\common\templates\post-build\post-build.yml
-    parameters:
-      enableSymbolValidation: true
-      # Reenable once this issue is resolved: https://github.com/dotnet/arcade/issues/2912
-      enableSourceLinkValidation: false
-      publishDependsOn:
-      - Validate
-      # This is to enable SDL runs part of Post-Build Validation Stage
-      SDLValidationParameters:
-        enable: false
-        continueOnError: false
-        params: ' -SourceToolsList @("policheck","credscan")
-        -TsaInstanceURL $(_TsaInstanceURL)
-        -TsaProjectName $(_TsaProjectName)
-        -TsaNotificationEmail $(_TsaNotificationEmail)
-        -TsaCodebaseAdmin $(_TsaCodebaseAdmin)
-        -TsaBugAreaPath $(_TsaBugAreaPath)
-        -TsaIterationPath $(_TsaIterationPath)
-        -TsaRepositoryName "Arcade"
-        -TsaCodebaseName "Arcade"
-        -TsaPublish $True'
-
+    #     - task: PublishBuildArtifacts@1
+    #       displayName: Publish Logs to VSTS
+    #       inputs:
+    #         PathtoPublish: '$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)'
+    #         PublishLocation: Container
+    #         ArtifactName: $(Agent.Os)_$(Agent.JobName)
+    #       continueOnError: true
+    #       condition: always()
+- stage: test
+  displayName: Run integration tests
+  dependsOn: build
+  jobs:
+  - job: Integration tests
+    pool:
+        name: Hosted macOS
+    steps:
+    - bash: "echo 'Hello world'"
+      name: HelloWorld
+      displayName: HelloWorld
+      condition: succeeded()
