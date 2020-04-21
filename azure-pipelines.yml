@@ -62,8 +62,11 @@ stages:
           name: Build
           displayName: Build
           condition: succeeded()
+        
+        - bash: cp $(Build.SourcesDirectory)/tests/integration-tests/run-ios-tests.sh $(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)/Shipping
+          displayName: Copy test scripts
 
-        - publish: $(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)/Shipping/Microsoft.DotNet.XHarness.CLI*.nupkg
+        - publish: $(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)/Shipping
           artifact: Microsoft.DotNet.XHarness.CLI
 
 - stage: test
@@ -79,9 +82,10 @@ stages:
       artifact: Microsoft.DotNet.XHarness.CLI
 
     - template: /eng/common/templates/steps/send-to-helix.yml
+      displayName: Run tests on iOS
       parameters:
-        DisplayNamePrefix: 'Run Tests'
-        HelixBaseUri: 'https://helix.int-dot.net/'
+        DisplayNamePrefix: Run Tests
+        HelixBaseUri: https://helix.int-dot.net/
         HelixType: test/product/
         IncludeDotNetCli: true
         DotNetCliPackageType: runtime
@@ -89,6 +93,6 @@ stages:
         WaitForWorkItemCompletion: true
         HelixTargetQueues: OSX.1015.Amd64.Open # TODO: Change this
         Creator: xharness
-        # WorkItemDirectory: ''
-        WorkItemCommand: 'hostname'
-        # WorkItemTimeout: ''
+        WorkItemDirectory: $(Pipeline.Workspace)/Microsoft.DotNet.XHarness.CLI
+        WorkItemCommand: chmod 0755 run-ios-tests.sh && ./run-ios-tests.sh
+        WorkItemTimeout: 120
