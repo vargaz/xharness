@@ -3,10 +3,14 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XHarness.CLI.Common;
+using Microsoft.DotNet.XHarness.CLI.Common.Arguments;
+using Microsoft.DotNet.XHarness.CLI.iOS.Arguments;
 using Microsoft.DotNet.XHarness.iOS;
 using Microsoft.DotNet.XHarness.iOS.Shared;
 using Microsoft.DotNet.XHarness.iOS.Shared.Execution;
@@ -27,6 +31,7 @@ namespace Microsoft.DotNet.XHarness.CLI.iOS
         private readonly iOSTestCommandArguments _arguments = new iOSTestCommandArguments();
         protected override ITestCommandArguments TestArguments => _arguments;
 
+
         protected override OptionSet GetOptions()
         {
             var options = new OptionSet
@@ -34,8 +39,8 @@ namespace Microsoft.DotNet.XHarness.CLI.iOS
                 "usage: ios test [OPTIONS]",
                 "",
                 "Packaging command that will create a iOS/tvOS/watchOS or macOS application that can be used to run NUnit or XUnit-based test dlls",
-                { "xcode=", "Path where Xcode is installed", v => _arguments.XcodeRoot = v},
-                { "mlaunch=", "Path to the mlaunch binary", v => _arguments.MlaunchPath = v},
+                { "xcode=", "Path where Xcode is installed", v => _arguments.XcodeRoot = RootPath(v)},
+                { "mlaunch=", "Path to the mlaunch binary", v => _arguments.MlaunchPath = RootPath(v)},
                 { "device-name=", "Name of a specific device, if you wish to target one", v => _arguments.DeviceName = v},
                 { "launch-timeout=|lt=", "Time span, in seconds, to wait for the iOS app to start.", v => _arguments.LaunchTimeout = TimeSpan.FromSeconds(int.Parse(v))},
             };
@@ -50,6 +55,14 @@ namespace Microsoft.DotNet.XHarness.CLI.iOS
 
         protected override async Task<ExitCode> InvokeInternal(ILogger logger)
         {
+            if (!_arguments.TestTargets.Any())
+            {
+                throw new ArgumentException(
+                    $@"No targets specified. At least one target must be provided. " +
+                    $"Available targets are:{Environment.NewLine}\t" +
+                    $"{string.Join(Environment.NewLine + "\t", iOSTestCommandArguments.GetAvailableTargets())}");
+            }
+
             var processManager = new ProcessManager(_arguments.XcodeRoot, _arguments.MlaunchPath);
             var deviceLoader = new HardwareDeviceLoader(processManager);
             var simulatorLoader = new SimulatorLoader(processManager);
@@ -201,6 +214,16 @@ namespace Microsoft.DotNet.XHarness.CLI.iOS
                     }
                 }
             }
+        }
+
+        private static string RootPath(string path)
+        {
+            if (!Path.IsPathRooted(path))
+            {
+                path = Path.Combine(Directory.GetCurrentDirectory(), path);
+            }
+
+            return path;
         }
     }
 }

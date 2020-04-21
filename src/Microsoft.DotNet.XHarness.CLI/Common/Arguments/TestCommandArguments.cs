@@ -4,19 +4,18 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 
-namespace Microsoft.DotNet.XHarness.CLI.Common
+namespace Microsoft.DotNet.XHarness.CLI.Common.Arguments
 {
     internal abstract class TestCommandArguments : XHarnessCommandArguments, ITestCommandArguments
     {
         public string? AppPackagePath { get; set; }
-        public IReadOnlyCollection<string>? Targets { get; set; }
+        public virtual IReadOnlyCollection<string>? Targets { get; set; }
         public TimeSpan Timeout { get; set; } = TimeSpan.FromMinutes(15);
         public string? OutputDirectory { get; set; }
         public string? WorkingDirectory { get; set; }
 
-        public override IList<string> GetValidationErrors()
+        /*public override IList<string> GetValidationErrors()
         {
             var errors = new List<string>();
 
@@ -60,6 +59,6 @@ namespace Microsoft.DotNet.XHarness.CLI.Common
             }
 
             return errors;
-        }
+        }*/
     }
 }

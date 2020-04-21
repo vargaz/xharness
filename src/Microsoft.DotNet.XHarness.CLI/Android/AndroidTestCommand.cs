@@ -6,7 +6,9 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XHarness.Android;
+using Microsoft.DotNet.XHarness.CLI.Android.Arguments;
 using Microsoft.DotNet.XHarness.CLI.Common;
+using Microsoft.DotNet.XHarness.CLI.Common.Arguments;
 using Microsoft.Extensions.Logging;
 using Mono.Options;
 
@@ -50,6 +52,19 @@ namespace Microsoft.DotNet.XHarness.CLI.Android
 
         protected override Task<ExitCode> InvokeInternal(ILogger logger)
         {
+            if (string.IsNullOrEmpty(_arguments.OutputDirectory))
+            {
+                throw new ArgumentException("Must specify a value for the output folder");
+            }
+
+            if (string.IsNullOrEmpty(_arguments.DeviceOutputFolder))
+            {
+                throw new ArgumentException("Must specify a value for device output folder");
+            }
+
+            // Package Name is not guaranteed to match file name, so it needs to be mandatory.
+            string apkPackageName = _arguments.PackageName ?? throw new ArgumentException("Package name was not specified");
+
             logger.LogDebug($"Android Test command called: App = {_arguments.AppPackagePath}{Environment.NewLine}Instrumentation Name = {_arguments.InstrumentationName}");
             logger.LogDebug($"Output Directory:{_arguments.OutputDirectory}{Environment.NewLine}Working Directory = {_arguments.WorkingDirectory}{Environment.NewLine}Timeout = {_arguments.Timeout.TotalSeconds} seconds.");
             logger.LogDebug("Arguments to instrumentation:");
@@ -59,10 +74,8 @@ namespace Microsoft.DotNet.XHarness.CLI.Android
                 logger.LogCritical($"Couldn't find {_arguments.AppPackagePath}!");
                 return Task.FromResult(ExitCode.PACKAGE_NOT_FOUND);
             }
-            var runner = new AdbRunner(logger);
 
-            // Package Name is not guaranteed to match file name, so it needs to be mandatory.
-            string apkPackageName = _arguments.PackageName;
+            var runner = new AdbRunner(logger);
 
             try
             {

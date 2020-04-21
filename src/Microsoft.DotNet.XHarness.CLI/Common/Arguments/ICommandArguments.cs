@@ -4,14 +4,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 
-namespace Microsoft.DotNet.XHarness.CLI.Common
+namespace Microsoft.DotNet.XHarness.CLI.Common.Arguments
 {
     internal interface ICommandArguments
     {
-        IList<string> GetValidationErrors();
-
         /// <summary>
         /// Minimum level at which logging statements will be emitted to the console
         /// </summary>
@@ -23,11 +22,13 @@ namespace Microsoft.DotNet.XHarness.CLI.Common
         /// <summary>
         /// Path to packaged app
         /// </summary>
+        [DisallowNull]
         string? AppPackagePath { get; set; }
 
         /// <summary>
         /// List of targets to test
         /// </summary>
+        [DisallowNull]
         IReadOnlyCollection<string>? Targets { get; set; }
 
         /// <summary>
@@ -38,11 +39,13 @@ namespace Microsoft.DotNet.XHarness.CLI.Common
         /// <summary>
         /// Path where the outputs of execution will be stored
         /// </summary>
+        [DisallowNull]
         string? OutputDirectory { get; set; }
 
         /// <summary>
         /// Path where run logs will hbe stored and projects
         /// </summary>
+        [DisallowNull]
         string? WorkingDirectory { get; set; }
     }
 
@@ -51,16 +54,19 @@ namespace Microsoft.DotNet.XHarness.CLI.Common
         /// <summary>
         /// Name of the packaged app
         /// </summary>
+        [DisallowNull]
         string? AppPackageName { get; set; }
 
         /// <summary>
         /// Path where the outputs of execution will be stored
         /// </summary>
+        [DisallowNull]
         string? OutputDirectory { get; set; }
 
         /// <summary>
         /// Path where run logs will hbe stored and projects
         /// </summary>
+        [DisallowNull]
         string? WorkingDirectory { get; set; }
     }
 }

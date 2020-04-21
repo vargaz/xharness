@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using Microsoft.DotNet.XHarness.CLI.Common.Arguments;
 using Mono.Options;
 
 namespace Microsoft.DotNet.XHarness.CLI.Common

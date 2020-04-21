@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using Microsoft.DotNet.XHarness.CLI.Common;
+using Microsoft.DotNet.XHarness.CLI.Common.Arguments;
 
-namespace Microsoft.DotNet.XHarness.CLI.Android
+namespace Microsoft.DotNet.XHarness.CLI.Android.Arguments
 {
     internal class AndroidTestCommandArguments : TestCommandArguments
     {
@@ -13,30 +13,18 @@ namespace Microsoft.DotNet.XHarness.CLI.Android
         /// If specified, attempt to run instrumentation with this name instead of the default for the supplied APK.
         /// If a given package has multiple instrumentations, failing to specify this may cause execution failure.
         /// </summary>
-        public string InstrumentationName { get; set; }
+        public string? InstrumentationName { get; set; }
 
         /// <summary>
         /// If specified, attempt to run instrumentation with this name instead of the default for the supplied APK
         /// </summary>
-        public string PackageName { get; set; }
+        public string? PackageName { get; set; }
 
         /// <summary>
         /// Folder to copy off for output of executing the specified APK
         /// </summary>
-        public string DeviceOutputFolder { get; set; }
+        public string? DeviceOutputFolder { get; set; }
 
         public Dictionary<string, string> InstrumentationArguments { get; set; } = new Dictionary<string, string>();
-
-        public override IList<string> GetValidationErrors()
-        {
-            var errors = base.GetValidationErrors();
-
-            if (string.IsNullOrEmpty(DeviceOutputFolder))
-            {
-                errors.Add("Must specify a value for device output folder");
-            }
-
-            return errors;
-        }
     }
 }

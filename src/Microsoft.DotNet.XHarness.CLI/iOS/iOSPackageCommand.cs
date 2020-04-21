@@ -5,6 +5,8 @@
 using System;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XHarness.CLI.Common;
+using Microsoft.DotNet.XHarness.CLI.Common.Arguments;
+using Microsoft.DotNet.XHarness.CLI.iOS.Arguments;
 using Microsoft.Extensions.Logging;
 using Mono.Options;
 
